@@ -1,0 +1,37 @@
+options:
+  credentials:
+    description: |
+      The base64-encoded contents of a JSON file containing vSphere credentials.
+
+      The credentials must contain the following keys: auth-url, username, password,
+      project-name, user-domain-name, and project-domain-name.
+
+      This can be used from bundles with 'include-base64://' (see
+      https://jujucharms.com/docs/stable/charms-bundles#setting-charm-configurations-options-in-a-bundle),
+      or from the command-line with 'juju config vsphere credentials="$(base64 /path/to/file)"'.
+
+      It is strongly recommended that you use 'juju trust' instead, if available.
+    type: string
+    default: ""
+  auth-url:
+    description: |
+      The URL of the vSphere API used to authenticate.
+    type: string
+    default: ""
+  username:
+    description: Username of a valid vSphere user.
+    type: string
+    default: ""
+  password:
+    description: Password of a valid vSphere user.
+    type: string
+    default: ""
+  datacenter:
+    description: vSphere datacenter name. In the vCenter control panel,
+      this can be found at Inventory Lists > Resources > Datacenters.
+    type: string
+    default: ""
+  storage-path:
+    description: VM folder created in your vSphere datacenter.
+    type: string
+    default: ""

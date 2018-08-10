@@ -1,0 +1,8 @@
+repo: 'https://github.com/juju-solutions/charm-vsphere-integrator'
+includes:
+  - 'layer:basic'
+  - 'layer:status'
+  - 'interface:vsphere-integration'
+options:
+  basic:
+    use_venv: true
