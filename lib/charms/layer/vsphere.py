@@ -49,9 +49,8 @@ def get_credentials():
     if any([config['auth-url'],
             config['username'],
             config['password'],
-            config['project-name'],
-            config['user-domain-name'],
-            config['project-domain-name']]):
+            config['datacenter'],
+            config['datastore']]):
         log('Using individual config values for credentials')
         _save_creds(config)
         return True
@@ -100,7 +99,7 @@ def _save_creds(creds_data):
         username=attrs['username'],
         password=attrs['password'],
         datacenter=attrs['datacenter'],
-        storage_path=attrs['storage-path'],
+        datastore=attrs['datastore'],
     ))
 
 

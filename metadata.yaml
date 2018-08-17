@@ -1,7 +1,7 @@
 name: vsphere-integrator
-display-name: VMWare vSphere Integrator
+display-name: VMware vSphere Integrator
 summary: |
-  Proxy charm to enable VMWare vSphere integrations via Juju relations.
+  Proxy charm to enable VMware vSphere integrations via Juju relations.
 description: |
   This charm can grant select permissions to instances of applications
   related to it which enable integration with vSphere specific features,

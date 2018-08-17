@@ -1,6 +1,6 @@
 # Overview
 
-This charm acts as a proxy to VMWare vSphere and provides an [interface][] to
+This charm acts as a proxy to VMware vSphere and provides an [interface][] to
 provide a set of credentials for a somewhat limited project user to the
 applications that are related to this charm.
 
@@ -55,7 +55,7 @@ vSphere's PersistentDisk.
 ```sh
 #!/bin/bash
 
-# create a storage class using the `kubernetes.io/cinder` provisioner
+# create a storage class using the `kubernetes.io/vsphere-volume` provisioner
 kubectl create -f - <<EOY
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -64,7 +64,6 @@ metadata:
 provisioner: kubernetes.io/vsphere-volume
 parameters:
   diskformat: zeroedthick
-  fstype:     ext  4
 EOY
 
 # create a persistent volume claim using that storage class

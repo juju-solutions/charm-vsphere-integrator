@@ -14,8 +14,7 @@ options:
     type: string
     default: ""
   auth-url:
-    description: |
-      The URL of the vSphere API used to authenticate.
+    description: The URL of the vSphere API used to authenticate.
     type: string
     default: ""
   username:
@@ -27,11 +26,14 @@ options:
     type: string
     default: ""
   datacenter:
-    description: vSphere datacenter name. In the vCenter control panel,
-      this can be found at Inventory Lists > Resources > Datacenters.
+    description: |
+      vSphere datacenter name. In the vCenter control panel, this can be found
+      at Inventory Lists > Resources > Datacenters.
     type: string
     default: ""
-  storage-path:
-    description: VM folder created in your vSphere datacenter.
+  datastore:
+    description: |
+      Datastore to use for provisioning volumes using storage classes and
+      persistent volume claims.
     type: string
     default: ""
