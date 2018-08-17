@@ -46,8 +46,8 @@ def get_credentials():
     no_creds_msg = 'missing credentials; set credentials config'
 
     # try individual config
-    if any([config['auth-url'],
-            config['username'],
+    if any([config['vsphere_ip'],
+            config['user'],
             config['password'],
             config['datacenter'],
             config['datastore']]):
@@ -62,6 +62,8 @@ def get_credentials():
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         creds_data = yaml.load(result.stdout.decode('utf8'))
+        # need to append the datastore, as it always comes from config
+        creds_data.update({'datastore': '{}'.format(config['datastore'])})
         log('Using credentials-get for credentials')
         _save_creds(creds_data)
         return True
@@ -88,18 +90,26 @@ def cleanup():
 
 
 def _save_creds(creds_data):
+    # datastore comes from config and should always be a key in creds_data
+    datastore = creds_data['datastore']
+
     if 'endpoint' in creds_data:
-        endpoint = creds_data['endpoint']
+        # we're using 'juju trust'
+        vsphere_ip = creds_data['endpoint']
+        datacenter = creds_data['region']
         attrs = creds_data['credential']['attributes']
     else:
+        # we're using charm config
+        vsphere_ip = attrs['vsphere_ip']
+        datacenter = attrs['datacenter']
         attrs = creds_data
-        endpoint = attrs['auth-url']
+
     kv().set('charm.vsphere.full-creds', dict(
-        auth_url=endpoint,
-        username=attrs['username'],
+        vsphere_ip=vsphere_ip,
+        user=attrs['user'],
         password=attrs['password'],
-        datacenter=attrs['datacenter'],
-        datastore=attrs['datastore'],
+        datacenter=datacenter,
+        datastore=datastore,
     ))
 
 
