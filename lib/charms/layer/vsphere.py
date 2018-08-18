@@ -46,11 +46,11 @@ def get_credentials():
     no_creds_msg = 'missing credentials; set credentials config'
 
     # try individual config
+    # NB: if a user sets one of these, they better set 'em all!
     if any([config['vsphere_ip'],
             config['user'],
             config['password'],
-            config['datacenter'],
-            config['datastore']]):
+            config['datacenter']]):
         log('Using individual config values for credentials')
         _save_creds(config)
         return True
@@ -100,9 +100,9 @@ def _save_creds(creds_data):
         attrs = creds_data['credential']['attributes']
     else:
         # we're using charm config
+        attrs = creds_data
         vsphere_ip = attrs['vsphere_ip']
         datacenter = attrs['datacenter']
-        attrs = creds_data
 
     kv().set('charm.vsphere.full-creds', dict(
         vsphere_ip=vsphere_ip,
