@@ -10,8 +10,8 @@ When on a vSphere cloud, this charm can be deployed, granted trust via Juju to
 access vSphere, and then related to an application that supports the
 [interface][].
 
-For example, [CDK][] has support for this, and can be deployed with the
-following bundle overlay:
+For example, [Canonical Kubernetes][] (CDK) has support for this, and can be
+deployed with the following bundle overlay:
 
 ```yaml
 applications:
@@ -31,7 +31,53 @@ juju trust vsphere-integrator
 ```
 
 To deploy with earlier versions of Juju, you will need to provide the cloud
-credentials via the `credentials`, charm config options.
+credentials via the `credentials` charm config option:
+
+```
+cat <<EOJ > /path/to/cloud.json
+{
+  "vsphere_ip": "a.b.c.d",
+  "user": "joe",
+  "password": "passw0rd",
+  "datacenter": "dc0"
+}
+EOJ
+
+juju config vsphere-integrator credentials="$(base64 /path/to/cloud.json)"
+```
+
+## Configuration
+
+This charm supports multiple config options that can be used to describe they
+vSphere environment.
+
+The only required option is `datastore`, as it is not included in the Juju
+credential that this charm relies on. By default, this is set to *datastore1*.
+This can be changed with:
+
+```
+juju config vsphere-integrator datastore='mydatastore'
+```
+
+As mentioned in the **Usage** section, `credentials` may be set with a
+base64-encoded json file. When set, this data will take precedent over all
+other methods of specifying credentials for this charm.
+
+If `credentials` is empty, there are config options for each key that
+constitute a Juju credential. These can be set with:
+
+```
+juju config vsphere-integrator \
+  vsphere_ip='a.b.c.d' \
+  user='joe' \
+  password='passw0rd' \
+  datacenter='dc0'
+```
+>Note: If any of the credential config options are set, they must all be set.
+
+When all of the credential config options are empty, this charm will fall
+back to the credential data it received with `juju trust vsphere-integrator`.
+
 
 # Resource Usage Note
 
@@ -42,6 +88,7 @@ automatically deleted when the models or applications are destroyed, nor will
 they show up in Juju's status or GUI.  It is therefore up to the operator to
 manually delete these resources when they are no longer needed, using the
 vCenter console or API.
+
 
 # Examples
 
@@ -108,4 +155,4 @@ EOY
 ```
 
 [interface]: https://github.com/juju-solutions/interface-vsphere-integration
-[CDK]: https://jujucharms.com/canonical-kubernetes
+[Canonical Kubernetes]: https://jujucharms.com/canonical-kubernetes
