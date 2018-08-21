@@ -9,6 +9,7 @@ description: |
 maintainers: ['Kevin Monroe <kevin.monroe@canonical.com>']
 series:
   - xenial
+  - bionic
 tags: ['vsphere', 'native', 'integration']
 provides:
   clients:
