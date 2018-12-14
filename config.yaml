@@ -37,3 +37,14 @@ options:
       persistent volume claims. Defaults to 'datastore1'.
     type: string
     default: "datastore1"
+  folder:
+    description: |
+      Virtual center VM folder path under the datacenter. Defaults to 'juju-kubernetes'.
+      This value must not be empty.
+    type: string
+    default: "juju-kubernetes"
+  respool_path:
+    description: |
+      Path to resource pool under the datacenter.
+    type: string
+    default: ""

@@ -24,9 +24,9 @@ def log_err(msg, *args):
     hookenv.log(msg.format(*args), hookenv.ERROR)
 
 
-def get_credentials():
+def save_credentials():
     """
-    Get the credentials from either the config or the hook tool.
+    Save the credentials from either the config or the hook tool to the kv.
 
     Prefers the config so that it can be overridden.
     """
@@ -47,7 +47,7 @@ def get_credentials():
 
     # try individual config
     # NB: if a user sets one of these, they better set 'em all!
-    if any([config['vsphere_ip'],
+    if all([config['vsphere_ip'],
             config['user'],
             config['password'],
             config['datacenter']]):
@@ -62,8 +62,6 @@ def get_credentials():
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         creds_data = yaml.load(result.stdout.decode('utf8'))
-        # need to append the datastore, as it always comes from config
-        creds_data.update({'datastore': '{}'.format(config['datastore'])})
         log('Using credentials-get for credentials')
         _save_creds(creds_data)
         return True
@@ -79,20 +77,34 @@ def get_credentials():
     return False
 
 
-def get_user_credentials():
+def get_vsphere_credentials():
     return _load_creds()
+
+
+def get_vsphere_config():
+    config = hookenv.config()
+    vsphere_config = {
+        'datastore': config['datastore'],
+        'folder': config['folder'],
+        'respool_path': config['respool_path'],
+    }
+    # datastore and folder can't be emtpy
+    if not vsphere_config['datastore']:
+        status.blocked("Missing required 'datastore' config")
+        return False
+    if not vsphere_config['folder']:
+        status.blocked("Missing required 'folder' config")
+        return False
+    return vsphere_config
 
 
 def cleanup():
     pass
 
+
 # Internal helpers
 
-
 def _save_creds(creds_data):
-    # datastore comes from config and should always be a key in creds_data
-    datastore = creds_data['datastore']
-
     if 'endpoint' in creds_data:
         # we're using 'juju trust'
         vsphere_ip = creds_data['endpoint']
@@ -109,7 +121,6 @@ def _save_creds(creds_data):
         user=attrs['user'],
         password=attrs['password'],
         datacenter=datacenter,
-        datastore=datastore,
     ))
 
 
