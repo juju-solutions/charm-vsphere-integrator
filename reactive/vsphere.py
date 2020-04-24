@@ -12,6 +12,11 @@ from charms.reactive.relations import endpoint_from_name
 from charms import layer
 
 
+@hook('pre-series-upgrade')
+def pre_series_upgrade():
+    layer.status.blocked('Series upgrade in progress')
+
+
 @when_any('config.changed.credentials',
           'config.changed.vsphere_ip',
           'config.changed.user',
@@ -41,6 +46,7 @@ def manage_config():
 @when_all('charm.vsphere.creds.set',
           'charm.vsphere.config.set')
 @when_not('endpoint.clients.requests-pending')
+@when_not('upgrade.series.in-progress')
 def no_requests():
     layer.status.active('ready')
 
@@ -50,6 +56,7 @@ def no_requests():
           'endpoint.clients.joined')
 @when_any('config.changed',
           'endpoint.clients.requests-pending')
+@when_not('upgrade.series.in-progress')
 def handle_requests():
     clients = endpoint_from_name('clients')
     config_change = is_flag_set('config.changed')
