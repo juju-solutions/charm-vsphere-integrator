@@ -8,7 +8,7 @@ description: |
   such as block storage, object storage, etc.
 maintainers: ['Kevin Monroe <kevin.monroe@canonical.com>']
 series:
-    - focal
+  - focal
   - bionic
   - xenial
 tags: ['vsphere', 'native', 'integration']
