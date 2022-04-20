@@ -6,6 +6,7 @@ description: |
   This charm can grant select permissions to instances of applications
   related to it which enable integration with vSphere specific features,
   such as block storage, object storage, etc.
+docs: https://discourse.charmhub.io/t/vsphere-integrator-docs-index/6216
 maintainers: ['Kevin Monroe <kevin.monroe@canonical.com>']
 series:
   - focal
