@@ -9,6 +9,7 @@ description: |
 docs: https://discourse.charmhub.io/t/vsphere-integrator-docs-index/6216
 maintainers: ['Kevin Monroe <kevin.monroe@canonical.com>']
 series:
+  - jammy
   - focal
   - bionic
   - xenial
