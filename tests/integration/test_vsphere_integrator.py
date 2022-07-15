@@ -100,7 +100,7 @@ async def test_provider_ids(ops_test, k8s_cp: str, lk_client: AsyncClient):
     unit_args = await get_kubelet_args(ops_test, kubelet_apps)
     log.info("provider-ids from kubelet are %s.", unit_args)
 
-    has_provider_id = (all(args.get("--provider-id") for args in unit_args.values()),)
+    has_provider_id = all(args.get("--provider-id") for args in unit_args.values())
     if not has_provider_id:
         log.info("provider-ids not found without reconfiguring kubelets.")
         # reconfigure kubelets to ensure they have provider-id arg
@@ -119,9 +119,7 @@ async def test_provider_ids(ops_test, k8s_cp: str, lk_client: AsyncClient):
         log.info("now provider-ids from kubelet are %s.", unit_args)
 
         # Confirm each unit has a provider-id
-        has_provider_id = (
-            all(args.get("--provider-id") for args in unit_args.values()),
-        )
+        has_provider_id = all(args.get("--provider-id") for args in unit_args.values())
     assert has_provider_id, "Every node should have a providerID, not empty"
 
     nodes = await get_node_provider_ids(lk_client)
