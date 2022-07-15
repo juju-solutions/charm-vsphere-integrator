@@ -1,0 +1,17 @@
+description: Overlay Deployment of the integrator charm.
+applications:
+  kubernetes-control-plane:
+    options:
+      allow-privileged: "true"
+  vsphere-integrator:
+    charm: {{ charm }}
+    channel: null
+    series: {{ series }}
+    options:
+      folder: {{ folder }}
+      datastore: {{ datastore }}
+    num_units: 1
+    trust: true
+relations:
+  - ['vsphere-integrator', 'kubernetes-control-plane']
+  - ['vsphere-integrator', 'kubernetes-worker']
