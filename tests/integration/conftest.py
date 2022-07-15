@@ -21,8 +21,8 @@ def pytest_addoption(parser):
         "--folder",
         type=str,
         default=None,
-        help="Virtual center VM folder path under the datacenter. Defaults to 'juju-kubernetes'."
-        "This value must not be empty.",
+        help="Virtual center VM folder path under the datacenter. "
+        "Defaults to 'juju-kubernetes'. This value must not be empty.",
     )
 
 
