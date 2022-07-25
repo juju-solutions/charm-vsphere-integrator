@@ -12,7 +12,6 @@ series:
   - focal
   - jammy
   - bionic
-  - xenial
 tags: ['vsphere', 'native', 'integration']
 provides:
   clients:
