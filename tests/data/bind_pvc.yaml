@@ -1,0 +1,42 @@
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: mystorage
+provisioner: kubernetes.io/vsphere-volume
+parameters:
+  diskformat: zeroedthick
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: testclaim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: mystorage
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  namespace: default
+spec:
+  containers:
+    - image: busybox
+      command:
+        - sleep
+        - "3600"
+      imagePullPolicy: IfNotPresent
+      name: busybox
+      volumeMounts:
+        - mountPath: "/pv"
+          name: testvolume
+  restartPolicy: Always
+  volumes:
+    - name: testvolume
+      persistentVolumeClaim:
+        claimName: testclaim
