@@ -78,8 +78,8 @@ async def test_provider_ids(ops_test, lk_client: AsyncClient):
     unit_args = await get_kubelet_args(ops_test, kubelet_apps)
     log.info("provider-ids from kubelet are %s.", unit_args)
 
-    has_cloud_provider = all(args.get("--cloud-provider") for args in unit_args.values())
-    if not has_cloud_provider:
+    has_cp = all(args.get("--cloud-provider") for args in unit_args.values())
+    if not has_cp:
         log.info("cloud-provider not found without reconfiguring kubelets.")
         # reconfigure kubelets to ensure they have provider-id arg
         key = "kubelet-extra-args"
@@ -97,8 +97,8 @@ async def test_provider_ids(ops_test, lk_client: AsyncClient):
         log.info("now args from kubelet are %s.", unit_args)
 
         # Confirm each unit has a provider-id
-        has_cloud_provider = all(args.get("--cloud-provider") for args in unit_args.values())
-    assert has_cloud_provider, "Every node should have a cloud-provider, not empty"
+        has_cp = all(args.get("--cloud-provider") for args in unit_args.values())
+    assert has_cp, "Every node should have a cloud-provider, not empty"
 
     nodes = await get_node_provider_ids(lk_client)
     if not all(nodes.values()):
@@ -116,18 +116,22 @@ async def test_provider_ids(ops_test, lk_client: AsyncClient):
 
 
 async def test_pvc_creation(lk_client, pvc_and_pod):
-    pvc, pod = pvc_and_pod
-    pod_name = pod.metadata.name
     async def _wait_til_bound():
-        ns = pvc.metadata.namespace
         async for _, dep in lk_client.watch(PersistentVolumeClaim, namespace=ns):
             if dep.status.phase != "Bound" or not dep.spec.volumeName:
                 continue
             pod = await lk_client.get(Pod, name=pod_name, namespace=ns)
-            pvcs = [_.persistentVolumeClaim.claimName for _ in pod.spec.volumes if _.persistentVolumeClaim]
+            pvcs = [
+                _.persistentVolumeClaim.claimName
+                for _ in pod.spec.volumes
+                if _.persistentVolumeClaim
+            ]
             if pvc.metadata.name in pvcs:
                 return
 
+    pvc, pod = pvc_and_pod
+    pod_name = pod.metadata.name
+    ns = pvc.metadata.namespace
     await asyncio.wait_for(_wait_til_bound(), timeout=1 * 60)
 
 
