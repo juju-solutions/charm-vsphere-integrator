@@ -61,7 +61,7 @@ def save_credentials():
                                 check=True,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
-        creds_data = yaml.load(result.stdout.decode('utf8'))
+        creds_data = yaml.safe_load(result.stdout.decode('utf8'))
         log('Using credentials-get for credentials')
         _save_creds(creds_data)
         return True
