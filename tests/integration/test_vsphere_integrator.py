@@ -6,41 +6,22 @@ from typing import List
 from lightkube import AsyncClient
 from lightkube.config.kubeconfig import KubeConfig
 from lightkube.codecs import load_all_yaml
-from lightkube.resources.core_v1 import Node
+from lightkube.resources.core_v1 import Node, PersistentVolumeClaim, Pod
+
 import shlex
 
 log = logging.getLogger(__name__)
 
 BASE_MODEL = "kubernetes-core"
+K8S_CP = "kubernetes-control-plane"
 
 
 @pytest.fixture(scope="module")
-async def k8s_cp(ops_test):
-    """Establish Charmed Kubernetes without the vsphere integrator."""
-    required_charms = ("kubernetes-control-plane", "kubernetes-worker")
-    required_apps = {
-        charm: app_name
-        for app_name, app in ops_test.model.applications.items()
-        for charm in required_charms
-        if charm in app.charm_url
-    }
-    if len(required_apps) != len(required_charms):
-        log.info("Deploy Charmed Kubernetes")
-        await ops_test.model.deploy(BASE_MODEL, channel="edge")
-        k8s_cp = "kubernetes-control-plane"
-    else:
-        k8s_cp = required_apps["kubernetes-control-plane"]
-
-    await ops_test.model.wait_for_idle(wait_for_active=True, timeout=60 * 60)
-    yield k8s_cp
-
-
-@pytest.fixture(scope="module")
-async def kubeconfig(ops_test, k8s_cp: str):
+async def kubeconfig(ops_test):
     kubeconfig_path = ops_test.tmp_path / "kubeconfig"
     retcode, stdout, stderr = await ops_test.juju(
         "scp",
-        f"{k8s_cp}/leader:/home/ubuntu/config",
+        f"{K8S_CP}/leader:/home/ubuntu/config",
         kubeconfig_path,
     )
     if retcode != 0:
@@ -58,12 +39,12 @@ async def lk_client(kubeconfig):
 
 
 @pytest.fixture()
-async def bind_pvc(lk_client):
+async def pvc_and_pod(lk_client):
     objects = load_all_yaml(Path("tests/data/bind_pvc.yaml").read_text())
     for obj in objects:
         await lk_client.create(obj, obj.metadata.name, namespace=obj.metadata.namespace)
 
-    yield objects[1]
+    yield objects
 
     for obj in reversed(objects):
         await lk_client.delete(
@@ -72,9 +53,6 @@ async def bind_pvc(lk_client):
 
 
 @pytest.mark.abort_on_fail
-@pytest.mark.usefixtures(
-    "k8s_cp"
-)  # deploy k8s-cp to completation before vsphere-integrator
 async def test_build_and_deploy(ops_test, series: str, datastore: str, folder: str):
     log.info("Build Charm...")
     charm = await ops_test.build_charm(".")
@@ -94,15 +72,15 @@ async def test_build_and_deploy(ops_test, series: str, datastore: str, folder: s
 
 
 @pytest.mark.abort_on_fail
-async def test_provider_ids(ops_test, k8s_cp: str, lk_client: AsyncClient):
+async def test_provider_ids(ops_test, lk_client: AsyncClient):
     """Tests that every node has a provider id."""
-    kubelet_apps = [k8s_cp, "kubernetes-worker"]
+    kubelet_apps = [K8S_CP, "kubernetes-worker"]
     unit_args = await get_kubelet_args(ops_test, kubelet_apps)
     log.info("provider-ids from kubelet are %s.", unit_args)
 
-    has_provider_id = all(args.get("--provider-id") for args in unit_args.values())
-    if not has_provider_id:
-        log.info("provider-ids not found without reconfiguring kubelets.")
+    has_cp = all(args.get("--cloud-provider") for args in unit_args.values())
+    if not has_cp:
+        log.info("cloud-provider not found without reconfiguring kubelets.")
         # reconfigure kubelets to ensure they have provider-id arg
         key = "kubelet-extra-args"
         await asyncio.gather(
@@ -114,13 +92,13 @@ async def test_provider_ids(ops_test, k8s_cp: str, lk_client: AsyncClient):
         # Allow time for the cluster to apply the providerID
         await ops_test.model.wait_for_idle(wait_for_active=True, timeout=5 * 60)
 
-        # Gather the provider-ids again
+        # Gather the cloud-provider again
         unit_args = await get_kubelet_args(ops_test, kubelet_apps)
-        log.info("now provider-ids from kubelet are %s.", unit_args)
+        log.info("now args from kubelet are %s.", unit_args)
 
         # Confirm each unit has a provider-id
-        has_provider_id = all(args.get("--provider-id") for args in unit_args.values())
-    assert has_provider_id, "Every node should have a providerID, not empty"
+        has_cp = all(args.get("--cloud-provider") for args in unit_args.values())
+    assert has_cp, "Every node should have a cloud-provider, not empty"
 
     nodes = await get_node_provider_ids(lk_client)
     if not all(nodes.values()):
@@ -130,26 +108,36 @@ async def test_provider_ids(ops_test, k8s_cp: str, lk_client: AsyncClient):
 
         # Restart kube-controller-managers
         restart = ["systemctl", "restart", "snap.kube-controller-manager.daemon"]
-        await ops_test.juju("run", "-a", k8s_cp, "--", *restart)
+        await ops_test.juju("exec", "-a", K8S_CP, "--", *restart)
 
         nodes = await get_node_provider_ids(lk_client)
 
     assert all(nodes.values()), "All nodes should have a providerID"
 
 
-async def test_pvc_creation(lk_client, bind_pvc):
+async def test_pvc_creation(lk_client, pvc_and_pod):
     async def _wait_til_bound():
-        unbound = True
-        while unbound:
-            obj = await lk_client.get(type(bind_pvc), bind_pvc.metadata.name)
-            unbound = obj.status.phase != "Bound"
+        async for _, dep in lk_client.watch(PersistentVolumeClaim, namespace=ns):
+            if dep.status.phase != "Bound" or not dep.spec.volumeName:
+                continue
+            pod = await lk_client.get(Pod, name=pod_name, namespace=ns)
+            pvcs = [
+                _.persistentVolumeClaim.claimName
+                for _ in pod.spec.volumes
+                if _.persistentVolumeClaim
+            ]
+            if pvc.metadata.name in pvcs:
+                return
 
+    pvc, pod = pvc_and_pod
+    pod_name = pod.metadata.name
+    ns = pvc.metadata.namespace
     await asyncio.wait_for(_wait_til_bound(), timeout=1 * 60)
 
 
 async def get_kubelet_args(ops_test, kubelet_apps: List[str]):
     async def unit_kubelet_args(unit):
-        cmd = f"run -u {unit.name} -- pgrep -la kubelet"
+        cmd = f"exec -u {unit.name} -- pgrep -la kubelet"
         rc, stdout, _ = await ops_test.juju(*shlex.split(cmd))
         if rc == 0:
             _, kubelet_cmd = stdout.split(" ", 1)

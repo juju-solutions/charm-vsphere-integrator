@@ -12,6 +12,10 @@ applications:
       datastore: {{ datastore }}
     num_units: 1
     trust: true
+  vsphere-cloud-provider:
+    charm: vsphere-cloud-provider
 relations:
-  - ['vsphere-integrator', 'kubernetes-control-plane']
-  - ['vsphere-integrator', 'kubernetes-worker']
+- [vsphere-cloud-provider:certificates, easyrsa:client]
+- [vsphere-cloud-provider:kube-control, kubernetes-control-plane:kube-control]
+- [vsphere-cloud-provider:external-cloud-provider, kubernetes-control-plane:external-cloud-provider]
+- [vsphere-cloud-provider:vsphere-integration, vsphere-integrator:clients]
